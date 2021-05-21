@@ -1741,6 +1741,56 @@ int main() {
 $<,\; >$. Eq, $==$, Real? (sqrt). Распределить наследование ($+,\; >,\; /,\; \sqrt{}$) для натуральных чисел, рациональных
 чисел, иррациональных чисел, комплексных чисел. (Сплошная математика).
 
+\subsection{Стандартная библиотека. Std vector.}
+
+std set сначала?
+
+В задаче Дейкстры про представление в виде суммы квадратов: если хотим функцию, возвращающую (что?)
+--- нужен массив не известной заранее длины. Что делать? С сортировками тоже можно было бы написать
+легче, если бы были "переменные" массивы. То есть встроенных типов данных мало.
+
+vector --- как массив, но несколько удобнее. Осторожнее с указателями на элементы!
+\begin{minted}{cpp}
+// Vector initialization
+#include <vector>
+#include <iostream>
+using namespace std;
+
+int main() {
+    vector<int> v(10); // 10 elements
+    //vector<int> v(10, 2);
+    for (auto& x: v) { // C++11
+        static int i = 0;
+        x = i++;
+    }
+    v[2] = 25; // 0 1 25 3 4 ...
+    // === push_back, iterators ===
+    for (int i = 0; i < 6; i++) {
+        v.pop_back(); // 0 1 25 3
+    }
+    v.push_back(49); // 0 1 25 3 49
+    // без using... -> std::vector<int>::iterator
+    for (vector<int>::iterator it = v.begin(); it != v.end(); ++it) {
+        cout << *it << " "; // 0 1 25 3 49
+    }
+    cout << "\n";
+    // === operator = ; size() ===
+    v = vector<int>(3);
+    cout << v.size() << "\t" << v.capacity() << "\n"; // 3 3
+    v.reserve(10); // увеличивает емкость до значения, большего или равного указанному
+    cout << v.size() << "\t" << v.capacity() << "\n"; // 3 10
+    for ( int i = 0; i < 40; ++i) {
+        size_t c = v.capacity();
+        v.push_back(1);
+        if (c != v.capacity()) {
+            cout << v.capacity() << "\n"; // 20 40 80
+        }
+    }
+    // [], resize, const iterators, front, back, data...
+}
+\end{minted}
+
+
 \subsection{Сортировка слиянием.}
 
 Существует множество методов сортировки, среди которых нет <<лучшего>>. Выбор
@@ -1829,52 +1879,6 @@ msort x = join (msort lhs) (msort rhs)
 
 Heapsort. Williams, 1964.
 
-
-В задаче Дейкстры про представление в виде суммы квадратов: если хотим функцию, возвращающую (что?)
---- нужен массив не известной заранее длины. Что делать? С сортировками тоже можно было бы написать
-легче, если бы были "переменные" массивы. То есть встроенных типов данных мало.
-\subsection{Стандартная библиотека. Std vector.}
-
-vector --- как массив, но несколько удобнее. Осторожнее с указателями на элементы!
-\begin{minted}{cpp}
-// Vector initialization
-#include <vector>
-#include <iostream>
-using namespace std;
-
-int main() {
-    vector<int> v(10); // 10 elements
-    //vector<int> v(10, 2);
-    for (auto& x: v) { // C++11
-        static int i = 0;
-        x = i++;
-    }
-    v[2] = 25; // 0 1 25 3 4 ...
-    // === push_back, iterators ===
-    for (int i = 0; i < 6; i++) {
-        v.pop_back(); // 0 1 25 3
-    }
-    v.push_back(49); // 0 1 25 3 49
-    // без using... -> std::vector<int>::iterator
-    for (vector<int>::iterator it = v.begin(); it != v.end(); ++it) {
-        cout << *it << " "; // 0 1 25 3 49
-    }
-    cout << "\n";
-    // === operator = ; size() ===
-    v = vector<int>(3);
-    cout << v.size() << "\t" << v.capacity() << "\n"; // 3 3
-    v.reserve(10); // увеличивает емкость до значения, большего или равного указанному
-    cout << v.size() << "\t" << v.capacity() << "\n"; // 3 10
-    for ( int i = 0; i < 40; ++i) {
-        size_t c = v.capacity();
-        v.push_back(1);
-        if (c != v.capacity()) {
-            cout << v.capacity() << "\n"; // 20 40 80
-        }
-    }
-    // [], resize, const iterators, front, back, data...
-}
-\end{minted}
 
 \subsection{Binary trees}
 
