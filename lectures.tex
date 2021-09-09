@@ -2221,22 +2221,48 @@ fun main() {
 }
 \end{minted}
 
+\begin{figure}
+	\includegraphics[width=1\linewidth]{LetsPlotExample.png}
+    \caption{\label{LetsPlotExample}Простейший график, построенный с помощью lets-plot.}
+\end{figure}
+
 Для выполнения задачи понадобится работа со случайными числами и построение графиков, поэтому будет
-полезно рассмотреть следующий пример (результат работы которого - на рисунке?):
+полезно рассмотреть следующий пример (результат работы которого - на
+рисунке~\ref{LetsPlotExample}):
 \begin{minted}{kotlin}
+import jetbrains.letsPlot.export.ggsave // IDEA сама подсказывает,
+                                        // какие модули нужно импортировать
+import jetbrains.letsPlot.geom.geomPoint
+import jetbrains.letsPlot.letsPlot
 import kotlin.random.Random
 
 fun main() {
-    val n = 20
+    val n = 5000
     val gen = Random(12345) // seeded
     var xs: ArrayList<Double> = ArrayList(n) // lists cannot be declared
                                              // without initialization
+    var ys: ArrayList<Double> = ArrayList(n)
+
     for (i in 1..n) { // `1..n` is a Range
         xs.add(gen.nextDouble())
+        ys.add(Math.pow(gen.nextDouble(), 2.0))
     }
-    println(xs)
+
+    val data = mapOf<String, Any>("x" to xs, "y" to ys)
+
+    val fig = letsPlot(data) + geomPoint(
+        color = "dark-green",
+        size = 1.0
+    ) { x = "x"; y = "y" }
+
+    ggsave(fig, "LetsPlotExample.png")
 }
 \end{minted}
+
+Для компилации последнего примера в проект требуется добавить зависимости (File -> Project Settings
+-> Modules -> Dependencies -> + -> Library -> From Maven):
+org.jetbrains.lets-plot:lets-plot-kotlin-jvm и org.jetbrains.lets-plot:lets-plot-image-export. 
+Подробнее использование библиотеки lets-plot мы рассмотрим в следующем разделе.
 
 \subsubsection{Алгоритм Метрополиса}
 
