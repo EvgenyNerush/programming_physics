@@ -15,6 +15,6 @@ int main() {
     } else {
         p = f;
     }
-    cout << N << "\n" << f << "\n";
+    cout << N << "\n" << p << "\n";
     return 0;
 }

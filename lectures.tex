@@ -2970,7 +2970,23 @@ C++? Теория категорий.
 \end{multline}
 где интегрирование производится $n$ раз, $n \gg 1$.
 
+\textit{Задача о вычислении объёма многомерного шара}. Требуется написать программу, вычисляющую с
+помощью геометрического метода Монте-Карло объём $V$ шара единичного радиуса в пространстве
+размерности $D$ и построить график $V(D)$ вплоть до $D = 10$. Можно заметить, что ошибка метода
+(обозначим её $\varepsilon$), то есть разница вычисленного и реального объёмов, есть случайная
+величина. Для $D = 2$ или $D = 3$ требуется построить зависимость среднеквадратичного отклонения
+$\sigma$ для случайной величины $\varepsilon$ от числа точек, $N$, и показать, что
+$\sigma_\varepsilon \sim 1 / \sqrt{N}$. Команда - 4 человека. Модульность, git (github.com),
+параллельная версия - приветствуются.
+
 \section{Уравнение Шредингера}
+
+Какое отношение доска Гальтона имеет к квантовой механике? Мы рассмотрим задачу, упрощённо
+представляющую симуляции, возникающие в калибровочных теориях на решётках (lattice gauge theory) ---
+численном описании задач квантовой теории поля с сильной связью (квантовая хромодинамика, кварки,
+глюоны...), где теория возмущений (которая используется в квантовой электродинамике) не работает.
+Значительный вклад в lattice gauge theory внёс Кеннет Уильсон (Kenneth Wilson), лауреат Нобелевской
+премии по физике 1982 года (``за теорию критических явлений в связи с фазовыми переходами'').
 
 Что изменится, если зёрнышки с некоторой вероятностью $u(j)$ будут пропадать на гвоздиках? (Условно
 можно сказать, что к доске Гальтона приделали пылесос).  Легко показать, что уравнение на функцию
@@ -3031,6 +3047,69 @@ $\alpha = 10^{-4}$ даст $\Omega \approx 0.012$ (?!).
 вопросом, какова вероятность того, что зёрнышко выберет ту или иную траекторию. Зная вероятность
 рассеяния и исчезновения зёрнышка $w_k$ и $u(j)$ можно найти вероятность конкретной траектории как
 произведение ...
+
+\subsection{Terminal. Git. IntelliJ tips and tricks.}
+
+terminal idea project
+\begin{minted}{bash}
+help
+help cd
+cd
+cd src\main
+cd ..\..
+help xcopy
+xcopy /P src\main\kotlin\main.kt .
+use tab, up arrow
+dir
+more main.kt
+where /?
+where /R . main.kt
+del main.kt
+ping 8.8.8.8
+ping ya.ru
+exit
+\end{minted}
+
+Git --- система контроля версий (ещё есть SVN, Mercurial...), позволяет хранить различные версии
+кода, просматривать разницу между ними, а также чрезвычайно удобна для совместной разработки.
+Хранит изменения, а не весь код. При таком подходе, если разные люди работают над разными частями
+кода, их изменения можно легко соединить (merge). Ветки. git status, log, commit, pull, push.
+
+VCS/Import into version control/Create GIT repository...
+Cannot run git, download...
+all default...
+
+Git GUI
+New - dir of project, close. git bash, ls -la
+intellij, перезапустить idea, пкм main.kt (слева), git add, внизу - version control, commit, log
+hello, universe - посмотреть изменения в окне version control
+
+version control, local changes.
+println("qwe"), разицу видно в реальном времени
+
+в консоли проекта:
+git status
+modified: src/main...main.kt
+git add main.kt
+git status // modified - зеленым
+git commit -m 'Universe instead of world'
+git status .. nothing to commit
+git log
+
+git pull
+git push
+git branch
+git checkout
+
+tips, rename fun and alt +enter, ctrl y, ctrl w, x.for enter, x.if enter, drag and dock tabs, git
+diff, comput with shift shift, extract parameter ctrl alt p, select all occurences ctrl alt shift
+j, ctrl shift f12, code completeon ctrl shift enter or space, ctrl shift t, help/learn ide
+features, completeon with short names, alt ->, ctrl tab, ctrl e, ctrl shift e, ctrl shift v my
+friend! alt enter driven development, ctrl shift m для навигации {}, ctrl alt t editor fold
+
+слепая печать
+
+\subsection{Функциональное программирование на практике}
 
 \clearpage
 
