@@ -2065,7 +2065,48 @@ $O(log n)$, в худшем случае --- $O(n)$, но маловероятн
 дополнительные операции при вставке элементов, но зато деревья --- сбалансированные (АВЛ ---
 поддеревья различаются по высоте (глубине) не более, чем на 1).
 
-Std set. Std map.
+Std set. Хранилище для ключей. Упорядоченное. Обычно реализуется с использованием черно-красных
+деревьев.
+
+Std map. Key-value хранилище.
+\begin{minted}{cpp}
+#include <iostream>
+#include <map>
+
+using namespace std;
+
+int main () {
+    map<string ,int> m1, m2;
+    m1["weight"] = 10;
+    m1["length"] = 30;
+    m1["height"] = 2;
+    m2["weight"] = 5;
+    m2["density"] = 11;
+    cout << m1["weight"] << '\n'; // 10
+    for (map<string, int>::iterator it = m1.begin(); it != m1.end(); ++it) {
+        //cout << *it ... // error
+        cout << (*it).first << " = " << (*it).second << '\n';
+        // std::map is an ordered map:
+        // height = 2
+        // length = 30
+        // weight = 10
+    }
+    // C++11
+    for (auto x: m2) {
+        std::cout << x.first << " = " << x.second << '\n';
+        // density = 11
+        // weight = 5
+    }
+    // хотим найти элемент с ключом k; m[k] добавит элемент, этого хотим избежать
+    map<string, int>::iterator p = m2.find("height");
+    if (p == m2.end()) { // true
+        cout << "height not found\n";
+    }
+    // --, empty, size, max_size, ...
+    return 0;
+}
+\end{minted}
+Время работы map --- логарифмическое.
 
 \subsection{Оптимизация в спп}
 
