@@ -2290,52 +2290,8 @@ for (size_t i = 0; i < nx; ++i) {
 Перемена мест циклов может изменить производительность.
 
 Другой пример.
-\begin{minted}{cpp}
-// -std=c++11
-#include <iostream>
-#include <list>
-#include <cstdlib>
-#include <chrono>
-using namespace std;
+\inputminted{cpp}{cache.cpp}
 
-// sum or fold function
-template<typename D> D sum(const list<D>& data, D res0) {
-    D res = res0;
-    for (auto x: data) { // const iterator
-        res += x;
-    }
-    return res;
-}
-
-int main() {
-    const long n = 300000; // size_t?
-    list<double> xs;
-    srand(123);
-    // initialization
-    for (long i = 0; i < n; ++i) {
-        xs.push_back(static_cast<double>(rand()) / RAND_MAX); // rand is not the best choise
-    }
-    // lets measure sum time
-    auto t0 = chrono::high_resolution_clock::now();
-    double s = sum(xs, 0.0); // we could not write <double> here, but should
-                              // write (int) 0 as double 0.0
-    auto t1 = chrono::high_resolution_clock::now();
-    cout << "sum of unsorted = " << s << "\n"; // approximately n / 2
-    double t = 1e-9 * chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
-    cout << "sum of unsorted takes = " << t << " s\n";
-    cout << "time per element = " << t / n << " s\n";
-    xs.sort();
-    // lets measure sum time
-    t0 = chrono::high_resolution_clock::now();
-    s = sum(xs, 0.0);
-    t1 = chrono::high_resolution_clock::now();
-    cout << "sum of sorted = " << s << "\n"; // approximately n / 2
-    t = 1e-9 * chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
-    cout << "sum of sorted takes = " << t << " s\n";
-    cout << "time per element = " << t / n << " s\n";
-    return 0;
-}
-\end{minted}
 Компиляция:
 \begin{minted}{bash}
     g++ -std=c++11 -O0 cache.cpp
@@ -2536,7 +2492,217 @@ $S$ на единицу, при выходе --- уменьшает, если $S
   }
 \end{minted}
 
-\subsection{openmp, MPI etc??}
+\section{Openmp}
+
+Недостатки программы с C++11 threads: не везде есть поддержка стандарта (потоки --- разные, трудно
+писать кроссплатформенные приложения), скомпилировать программу без потоков нельзя (для
+какого-нибудь утюга с малой памятью итп), сложная логика, синхронизация и т. п., большая зарплата
+программистов.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=12cm]{Fork_join_omp_wiki.png}
+  \caption{\label{fig:mathgl_stereo}Master thread forks and joining tasks.}
+\end{figure}
+
+OpenMP (Open Multi-Processing) предоставляет как библиотечные функции для работы
+с потоками, так и директивы компилятора --- прагмы (pragmatic information).
+Прагмы обрабатываются препроцессором или компилятором. Если компилятор не
+понимает директивы --- он её игнорирует, что очень удобно для создания
+переносимых программ. Рассмотрим примеры.
+
+\begin{minted}{cpp}
+  #include <iostream>
+  #include <omp.h>
+  using namespace std;
+
+  int main(){
+    #pragma omp parallel /* -> fork additional threads only for enclosed work */
+    cout << "Hello, world!\n";
+    cout << "Hi, Universe!\n";
+    return 0;
+  }
+\end{minted}
+Результат для двухъядерного процессора:
+\begin{minted}{bash}
+  Hello, world!
+  Hello, world!
+  Hi, Universe!
+\end{minted}
+--- по числу ядер, но синхронизации нет, может быть смешение в первых двух
+строчках.
+
+В качестве примера посложнее рассмотрим заполнение массива. При заполнении все
+элементы независимы, спокойно можем делать в нескольких потоках.
+
+\begin{minted}{cpp}
+  #include <iostream>
+  #include <omp.h>
+  using namespace std;
+
+  const int number_of_threads = 4;
+  const long n = 1000;
+
+  int main(){
+    omp_set_num_threads(number_of_threads);
+    double* a = new double[n];
+    #pragma omp parallel for // team of threads processing the loop
+    for (long i = 0; i < n; ++i) {
+      a[i] = i;
+    }
+    for (long i = 0; i < n; ++i) { // this loop processed by the master thread
+      cout << a[i] << ' ';
+    }
+    cout << '\n';
+    delete[] a;
+    return 0;
+  }
+\end{minted}
+
+Если бы мы заполняли вектор с помощью pushback, могли бы нарваться на ошибки.
+Однако можно создать вектор из имеющегося массива, а можно и выделить память под
+вектор большой длины, а потом его заполнять.
+
+Как быть с обменом? Попробуем написать reduce. Map и reduce --- две
+знаменитые абстрактные функции, пришедшие из функционального программирования.
+
+\begin{minted}{cpp}
+  #include <iostream>
+  #include <omp.h>
+  #include <chrono>
+  using namespace std;
+
+  // 'greedy' reduce
+  // !!! parallel version, can be used only for commutative operation f !!!
+  template<typename T> T reduce(T f(T, T), T r0, T* a, long n) {
+    T rsh = r0;
+    T rpr;
+ /* team of threads is created here;
+    `rsh` is visible and accessible by all threads simultaneously;
+    `rpr` is used as a temporary variable (local copy)
+ */
+    #pragma omp parallel shared(rsh) private(rpr)
+    {
+      rpr = 0;
+      #pragma omp for
+      for (long i = 0; i < n; ++i)
+        rpr = f(rpr, a[i]);
+      // the following section is executed only by one thread at a time
+      #pragma omp critical
+      rsh += rpr;
+    }
+    return rsh;
+  }
+
+  double sum(double a, double b) {
+    return a + b;
+  }
+
+/* for the task about a sequence with all numbers repeated twice but one is unique
+  int fxor(int a, int b) {
+    return a^b;
+  }
+*/
+
+  const int number_of_threads = 4;
+  const long n = 1000000;
+
+  int main(){
+    omp_set_num_threads(number_of_threads);
+    double* a = new double[n];
+    #pragma omp parallel for // team of threads processing the loop
+    for (long i = 0; i < n; ++i)
+      a[i] = i + 1;
+    auto start =  chrono::high_resolution_clock::now();
+    cout << reduce<double>(sum, 0, a, n) << '\n'; // (n * n - n) / 2 + n = (n^2 + n) / 2
+    auto end =  chrono::high_resolution_clock::now();
+    cout << static_cast<double>((n * n + n) / 2) << '\n';
+    cout << "reduce takes = " << (chrono::duration_cast <chrono::nanoseconds> (end - start)).count() << " ns\n";
+    delete[] a;
+    return 0;
+  }
+\end{minted}
+
+\subsubsection{Задача (7 баллов, 14 Oct, 3 б за правильный ответ, оценка шага 1 б, время 1 б,
+опенмп и график времени от числа потоков 2 б.)}
+
+Исходные тексты (.cpp, .hpp) посылайте на nerush\_at\_appl.sci-nnov.ru. Баллы
+держатся 2 недели, потом убывают на 1 балл в неделю.
+
+Задача: вычислить методом прямоугольников в средней точке следующий интеграл:
+\begin{equation}
+  \int_0^{(31 \pi /2)^{1/3}} 3 x^2 \sin (x^3) \, dx
+\end{equation}
+\begin{enumerate}
+  \item Использование OpenMP приветствуется. % +1
+  \item Программа должна выводить правильный ответ в консоль. % +3
+  \item Оценка шага интегрирования приветствуется. % +1
+  \item Вывод времени интегрирования и график (число потоков, время). % +2
+\end{enumerate}
+
+\subsection{Message Passing Interface (MPI)}
+
+Поток --- наименьшая единица обработки, испольнение которой может быть назначено
+ядром операционной системы. Поток находится внутри процесса. Процесс ---
+программа, которая выполняется в текущий момент (включая адресное пространство,
+стек, глобальные переменные и т. п.). Потоки <<видят>> общие переменные
+программы и могут их использовать. В то же время при попытке доступа к <<чужой>>
+памяти из программы произойдёт SegFault. Для общения между процессами служит
+стандарт MPI (существует 2 реализации --- openMPI и mpich2).
+
+MPI позволяет создать $n$ копий одной и той же программы, отличающихся id. Число программ не
+изменяется во вроемя выполнения, обмен --- только за счёт пересылки сообщений. MPI стоит
+использовать, даже если вы пишите приложение под одну машину --- сильной потери скорости по
+сравнению с потоками и разделяемой памятью скорее всего не будет. Ограничения на обмен на самом
+деле упрощают написание программы и избавляют от ошибок. Программа с самого начала разделена на
+независимые части. Однако фиксированное число процессов может быть неудобно.  Есть синхронизация и
+т. д. Пример с движением большого числа частиц. А что делать, если они взаимодействуют? Работает
+часто не медленнее потоков, накладные расходы невелики. Главный плюс --- работает на системах с
+распределённой памятью --- часть задач может быть на одном компьютере, часть --- на другом.
+
+\section{OpenCL, CUDA.}
+
+Graphics Processing Unit (GPU) --- процессор видеокарты. Используются для
+текстурирования трёхмерных объектов и т. п. Поскольку типичные задачи ведеокарт
+хорошо распараллеливаются, число ядер в них, как правило, $\gg 1$. Ядра,
+организация памяти
+и т. п. могут сильно отличаться от ядер CPU и оперативной памяти в компьютере,
+но способны проводить вычисления с плавающей точкой (обычно float, double
+медленнее, если есть). Таким образом, некоторые вычисления можно переложить на
+GPU.
+
+CUDA (2007) --- Compute Unified Device Architecture, даёт разработчику доступ к
+набору инструкций графического ускорителя и к управлению его памятью.
+Реализация --- упрощённый диалект C. nVidia only.
+
+OpenCL (2009) --- Open Computing Language --- платформа для написания
+компьютерных программ, связанных с параллельными вычислениями, на различных
+устройствах. AMD, nVidia, Intel (phi), etc. Позволяет писать программы на С (с
+определёнными дополнениями). Из-за общности (для любых устройств) обладает
+моделью памяти, отличной от CUDA, из-за чего, как правило, её код работает на
+(говорят) 20 процентов медленнее. Одгако может работать как с проприетарными,
+так и с открытыми драйверами.
+
+Изначальная идеология: один и тот же код под все устройства, CPU, GPU. Однако
+критические места --- разные, и для получения максимальной производительности
+нужно модифицировать код.
+
+OpenCL архитектура.
+
+Compute device --- CPU, GPU, ... compute units, processing elements. Kernel runs
+on PEs in parallel. Compute unit не обязательно равно core. Модель памяти:
+
+global memory: shared by all processing elements, but has high access latency;
+
+read-only memory: smaller, low latency, writable by the host CPU but not the
+compute devices;
+
+local memory: shared by a group of processing elements;
+
+per-element private memory (registers).
+
+Работает чрезвычайно быстро, может на ноутбучной видеокарте обогнать процессор в
+несколько раз даже при простой архитектуре приложения.
 
 \subsection{Блокчейн, криптовалюты, биткоин (BTC)}
 
