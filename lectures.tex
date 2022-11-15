@@ -3327,8 +3327,8 @@ List comprehension (абстракция списков, включение сп
   len(z) # 10000
 \end{minted}
 
-Кортежи (Tuple). Простой аналог структур из C++. Разница с массивами - структура vs упорядоченность. Разный смысл. Постоянная
-структура и длина, hashable type. Immutable.
+Кортежи (Tuple). Простой аналог структур из C++, или записей (records) в других языках. Разница с массивами - структура vs упорядоченность.
+Разный смысл. Постоянная структура и длина, hashable type. Immutable.
 \begin{minted}{python}
   u = (1, 'a')
   u[0] # 1
@@ -3340,19 +3340,32 @@ List comprehension (абстракция списков, включение сп
   [(x, y) for x in range(1,10) for y in range(1,10) if x % y != 0]
 \end{minted}
 
-Множества (Set). По виду похожи на Set из других языков, но на самом деле реализованы через hash. \mintinline{python}{myset = {"potato",
-"apple"}}.
-
-Словари (dictionary). По виду похожи на Map (в cpp или scala реализованную через бинарное дерево), но на самом деле --- hash table. Массив,
-где в качестве индекса используется хеш. Поэтому списки нельзя использовать в качестве ключа (в двоичном дереве было бы можно).
+Множества (Set). По виду и названию похожи на Set из других языков (упорядоченное сбалансированное двоичное дерево), но на самом деле
+реализованы через hash; неупорядочены. В отличие от привычных множеств, могут содержать элементы разного типа (для которых есть хэш!).
 \begin{minted}{python}
-  tel = {"guido": 1234, "mike": 3555}
-  print(tel["guido"]) # 1234
-  tel["john"] = 4321 # mutable
-  # keys:
-  [print(x) for x in tel] # "john", "mike"
-  # values:
-  [print(tel[x]) for x in tel] # 4321, 3555
+    s = {'potato', 'apple'}
+    # {[1,2], [3,4]} - ERROR, list is unhashable
+    s = {'potato', (1, 'a')}
+    s[0] # error, set is unordered in python
+    [hash(i) for i in set] # ok
+    'potato' in s # True
+    'kiwi' in s # False
+    # union:
+    t = s | {'kiwi'} # not "+"!
+\end{minted}
+
+Словари (dictionary). По виду похожи на Map (в cpp или scala реализованную через привязку значений к бинарному дереву ключей), но на самом
+деле --- hash table. Массив, где в качестве индекса используется хеш. Поэтому списки нельзя использовать в качестве ключа.
+\begin{minted}{python}
+  tel = {'guido': 1234, 'mike': 3555}
+  tel['guido'] # 1234
+  tel['john'] = 4321 # dictionaries are mutable
+  tel['joseph'] = 'brodsky' # it's ok in python!
+  del tel['guido'] # remove key
+  'guido' in tel # False
+  keys = [x for x in tel] # john, mike, joseph - not ordered
+  values = [tel[x] for x in tel] # 4321, 3555, 'brodsky' - not ordered
+  union = tel | {'guido': 1234, 'linus': 5678}
 \end{minted}
 
 Списки и словари можно использовать для подстановки аргументов функций.
@@ -3366,7 +3379,7 @@ List comprehension (абстракция списков, включение сп
     xs = [1,2]
     print2(*xs) # print2(1,2)
     ys = {'y': 5, 'x': 6}
-    print2(**za) # 11
+    print2(**ys) # 11
  
     # пример посложнее
     import matplotlib.pyplot as mpl
@@ -3374,9 +3387,17 @@ List comprehension (абстракция списков, включение сп
     x = [0.1 * i for i in range(100)]
     y = [sin(z) for z in x]
     # keyword arguments
-    kwargs = {"color": "r", "linewidth": 0.7}
+    kwargs = {"color": "red", "linewidth": 0.7}
     plot(x, y, **kwargs)
 \end{minted}
+
+Зачем это всё нужно? Парадигма Data Oriented Programming (DOP). Records as maps. Ничего не контролируем во время компиляции, но
+легко расширяем типы и интуитивный ввод-вывод и обмен данными (JSON). Примеры:
+\inputminted{python}{romanNumbers.py}
+
+(Обратите внимание, что электроны это не список частиц, общие свойства вынесены).
+
+\subsection{Plotly and plotly.express}
 
 \subsubsection{Вычисление интегралов методом Монте-Карло}
 
