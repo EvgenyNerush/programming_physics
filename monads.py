@@ -36,7 +36,7 @@ ys = [y for x in xs for y in x] # [1,2,3,4]
 print(ys)
 
 # one more example
-print( [y for x in [1,2,3] for y in [x, -x]] ) # [1,-1,2,-1,3,-3]
+print( [y for x in [1,2,3] for y in [x, -x]] ) # [1,-1,2,-2,3,-3]
 
 print( [y for x in ['Ab', 'Cd'] for y in x.lower()] ) # ['a',b','c','d']
 
